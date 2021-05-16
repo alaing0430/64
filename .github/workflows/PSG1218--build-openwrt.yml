@@ -1,167 +1,166 @@
-＃
-＃版权（c）2019-2020 P3TERX <https://p3terx.com>
-＃
-＃这是免费的软件，根据MIT许可证获得许可。
-＃有关更多信息，请参见/ LICENSE。
-＃
-＃https ://github.com/P3TERX/Actions-OpenWrt
-＃说明：使用GitHub Actions构建OpenWrt
-＃
+#
+# Copyright (c) 2019-2020 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+# https://github.com/P3TERX/Actions-OpenWrt
+# Description: Build OpenWrt using GitHub Actions
+#
 
-名称：PSG1218-lienol-Build OpenWrt
+name: PSG1218-lienol-Build OpenWrt
 
-于：
-  观看：
-    类型：开始
-  repository_dispatch：
-＃   workflow_dispatch：
-＃    输入：
-＃       SSH：
-＃        说明：“ SSH连接到操作”
-＃        必填：false
-＃        默认：'假'
+on:
+  watch:
+    types: started
+  repository_dispatch:
+#  workflow_dispatch:
+#    inputs:
+#      ssh:
+#        description: 'SSH connection to Actions'
+#        required: false
+#        default: 'false'
 
-env：
-  REPO_URL：https : // //github.com/Lienol/openwrt
-  REPO_BRANCH：19.07
-  FEEDS_CONF：feeds.conf.default
-  CONFIG_FILE：PSG1218-16m.config
-  DIY_P1_SH：diy-feed.sh
-  DIY_P2_SH：diy-K2.sh
-  UPLOAD_BIN_DIR：是
-  UPLOAD_FIRMWARE：是
-  UPLOAD_COWTRANSFER：是
-  UPLOAD_WETRANSFER：是
-  UPLOAD_RELEASE：是
-  TZ：亚洲/上海
+env:
+  REPO_URL: https://github.com/Lienol/openwrt
+  REPO_BRANCH: 19.07
+  FEEDS_CONF: feeds.conf.default
+  CONFIG_FILE: PSG1218-16m.config
+  DIY_P1_SH: diy-feed.sh
+  DIY_P2_SH: diy-K2.sh
+  UPLOAD_BIN_DIR: true
+  UPLOAD_FIRMWARE: true
+  UPLOAD_COWTRANSFER: true
+  UPLOAD_WETRANSFER: true
+  UPLOAD_RELEASE: true
+  TZ: Asia/Shanghai
 
-职位：
-  建立：
-    运行：ubuntu-18.04
-    如果：github.event.repository.owner.id == github.event.sender.id
-    步骤：
-    -名称：结帐
-      用途：actions / checkout @ main
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    if: github.event.repository.owner.id == github.event.sender.id
+    steps:
+    - name: Checkout
+      uses: actions/checkout@main
 
-    -名称：初始化环境
-      env：
-        DEBIAN_FRONTEND：非互动
-      运行：|
-        须藤rm -rf /etc/apt/sources.list.d/* / usr / share / dotnet / usr / local / lib / android / opt / ghc
-        sudo -E apt-get -qq更新
-        须藤-E apt-get -qq install $（curl -fsSL git.io/depends-ubuntu-1804）
-        须藤-E apt-get -qq autoremove --purge
-        须藤-E apt-get -qq clean
-        sudo timedatectl设置时区“ $ TZ”
-        须藤mkdir -p / workdir
-        须藤chown $ USER：$ GROUPS / workdir
-    -名称：克隆的源代码
-      工作目录：/ workdir
-      运行：|
-        df -hT $ PWD
-        git clone $ REPO_URL -b $ REPO_BRANCH openwrt
-        ln -sf / workdir / openwrt $ GITHUB_WORKSPACE / openwrt
-    -名称：加载自定义供稿
-      运行：|
-        [-e $ FEEDS_CONF] && mv $ FEEDS_CONF openwrt / feeds.conf.default
-        chmod + x $ DIY_P1_SH
+    - name: Initialization environment
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
+        sudo -E apt-get -qq update
+        sudo -E apt-get -qq install $(curl -fsSL git.io/depends-ubuntu-1804)
+        sudo -E apt-get -qq autoremove --purge
+        sudo -E apt-get -qq clean
+        sudo timedatectl set-timezone "$TZ"
+        sudo mkdir -p /workdir
+        sudo chown $USER:$GROUPS /workdir
+    - name: Clone source code
+      working-directory: /workdir
+      run: |
+        df -hT $PWD
+        git clone $REPO_URL -b $REPO_BRANCH openwrt
+        ln -sf /workdir/openwrt $GITHUB_WORKSPACE/openwrt
+    - name: Load custom feeds
+      run: |
+        [ -e $FEEDS_CONF ] && mv $FEEDS_CONF openwrt/feeds.conf.default
+        chmod +x $DIY_P1_SH
         cd openwrt
-        $ GITHUB_WORKSPACE / $ DIY_P1_SH
-    -名称：更新供稿
-      运行：cd openwrt && ./scripts/feeds update -a
+        $GITHUB_WORKSPACE/$DIY_P1_SH
+    - name: Update feeds
+      run: cd openwrt && ./scripts/feeds update -a
 
-    -名称：安装供稿
-      运行：cd openwrt && ./scripts/feeds install -a
+    - name: Install feeds
+      run: cd openwrt && ./scripts/feeds install -a
 
-    -名称：加载自定义配置
-      运行：|
-        [-e文件] && mv文件openwrt /文件
-        [-e $ CONFIG_FILE] && mv $ CONFIG_FILE openwrt / .config
-        chmod + x $ DIY_P2_SH
+    - name: Load custom configuration
+      run: |
+        [ -e files ] && mv files openwrt/files
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE openwrt/.config
+        chmod +x $DIY_P2_SH
         cd openwrt
-        $ GITHUB_WORKSPACE / $ DIY_P2_SH
-＃     -名称：到操作的SSH连接
-＃      使用：P3TERX/ssh2actions@v1.0.0
-＃      如果：（！github.event.inputs.ssh == '真' && github.event.inputs.ssh = '假'）|| 包含（github.event.action，'ssh'）
-＃       ENV：
-＃         TELEGRAM_CHAT_ID：$ {{secrets.TELEGRAM_CHAT_ID}}
-＃         TELEGRAM_BOT_TOKEN：$ {{secrets.TELEGRAM_BOT_TOKEN}}
+        $GITHUB_WORKSPACE/$DIY_P2_SH
+#    - name: SSH connection to Actions
+#      uses: P3TERX/ssh2actions@v1.0.0
+#      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
+#      env:
+#        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+#        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
 
-    -名称：下载包
-      id：包裹
-      运行：|
+    - name: Download package
+      id: package
+      run: |
         cd openwrt
-        使defconfig
-        进行下载-j8
-        找到dl -size -1024c -exec ls -l {} \;
-        找到dl -size -1024c -exec rm -f {} \;
-    -名称：编译固件
-      id：编译
-      运行：|
+        make defconfig
+        make download -j8
+        find dl -size -1024c -exec ls -l {} \;
+        find dl -size -1024c -exec rm -f {} \;
+    - name: Compile the firmware
+      id: compile
+      run: |
         cd openwrt
-        echo -e“ $（nproc）线程编译”
-        使-j $（nproc）|| 使-j1 || 使-j1 V = s
-        回声“ :: set-output name = status :: success”
-        grep'^ CONFIG_TARGET。* DEVICE。* = y'.config | sed -r's /.* DEVICE _（。*）= y / \ 1 /'> DEVICE_NAME
-        [-s DEVICE_NAME] &&回显“ DEVICE_NAME = _ $（cat DEVICE_NAME）” >> $ GITHUB_ENV
-        回声“ FILE_DATE = _ $（日期+”％Y％m％d％H％M“）” >> $ GITHUB_ENV
-    -名称：检查空间使用情况
-      如果：（！cancelled（））
-      运行：df -hT
+        echo -e "$(nproc) thread compile"
+        make -j$(nproc) || make -j1 || make -j1 V=s
+        echo "::set-output name=status::success"
+        grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/' > DEVICE_NAME
+        [ -s DEVICE_NAME ] && echo "DEVICE_NAME=_$(cat DEVICE_NAME)" >> $GITHUB_ENV
+        echo "FILE_DATE=_$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
+    - name: Check space usage
+      if: (!cancelled())
+      run: df -hT
 
-    -名称：上载bin目录
-      用途：actions / upload-artifact @ main
-      if：steps.compile.outputs.status =='成功'&& env.UPLOAD_BIN_DIR =='true'
-      与：
-        名称：OpenWrt_bin $ {{env.DEVICE_NAME}} $ {{env.FILE_DATE}}
-        路径：openwrt / bin
+    - name: Upload bin directory
+      uses: actions/upload-artifact@main
+      if: steps.compile.outputs.status == 'success' && env.UPLOAD_BIN_DIR == 'true'
+      with:
+        name: OpenWrt_bin${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: openwrt/bin
 
-    -名称：整理文件
-      id：整理
-      如果：env.UPLOAD_FIRMWARE =='true'&&！cancelled（）
-      运行：|
-        cd openwrt / bin / targets / * / *
-        rm -rf软件包
-        回声“ FIRMWARE = $ PWD” >> $ GITHUB_ENV
-        回声“ :: set-output name = status :: success”
-    -名称：上传固件目录
-      用途：actions / upload-artifact @ main
-      如果：steps.organize.outputs.status =='成功'&&！cancelled（）
-      与：
-        名称：OpenWrt_firmware $ {{env.DEVICE_NAME}} $ {{env.FILE_DATE}}
-        路径：$ {{env.FIRMWARE}}
+    - name: Organize files
+      id: organize
+      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
+      run: |
+        cd openwrt/bin/targets/*/*
+        rm -rf packages
+        echo "FIRMWARE=$PWD" >> $GITHUB_ENV
+        echo "::set-output name=status::success"
+    - name: Upload firmware directory
+      uses: actions/upload-artifact@main
+      if: steps.organize.outputs.status == 'success' && !cancelled()
+      with:
+        name: OpenWrt_firmware${{ env.DEVICE_NAME }}${{ env.FILE_DATE }}
+        path: ${{ env.FIRMWARE }}
 
-    -名称：生成发布标签
-      id：标签
-      如果：env.UPLOAD_RELEASE =='true'&&！cancelled（）
-      运行：|
-        回声“ :: set-output name = release_tag :: $（date +”％Y.％m。％d-％H％M“）”
-        触摸release.txt
-        [$ UPLOAD_COWTRANSFER = true] && echo“🔗[Cowtransfer]（$ {{steps.cowtransfer.outputs.url}}）” >> release.txt
-        [$ UPLOAD_WETRANSFER = true] && echo“🔗[WeTransfer]（$ {{steps.wetransfer.outputs.url}}）” >> release.txt
-        回声“ :: set-output name = status :: success”
-    -名称：上传固件以发布
-      用途：softprops / action-gh-release @ v1
-      如果：steps.tag.outputs.status =='成功'&&！cancelled（）
-      env：
-        GITHUB_TOKEN：$ {{ secrets.GITHUB_TOKEN }}
-      与：
-        tag_name：$ {{steps.tag.outputs.release_tag}}
-        body_path：release.txt
-        文件：$ {{env.FIRMWARE}} / *
+    - name: Generate release tag
+      id: tag
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      run: |
+        echo "::set-output name=release_tag::$(date +"%Y.%m.%d-%H%M")"
+        touch release.txt
+        [ $UPLOAD_COWTRANSFER = true ] && echo "🔗 [Cowtransfer](${{ steps.cowtransfer.outputs.url }})" >> release.txt
+        [ $UPLOAD_WETRANSFER = true ] && echo "🔗 [WeTransfer](${{ steps.wetransfer.outputs.url }})" >> release.txt
+        echo "::set-output name=status::success"
+    - name: Upload firmware to release
+      uses: softprops/action-gh-release@v1
+      if: steps.tag.outputs.status == 'success' && !cancelled()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.tag.outputs.release_tag }}
+        body_path: release.txt
+        files: ${{ env.FIRMWARE }}/*
 
-    -名称：删除工作流程运行
-      用途：GitRML / delete-workflow-runs @ main
-      与：
-        保留天数：1
-        keep_minimum_runs：3
+    - name: Delete workflow runs
+      uses: GitRML/delete-workflow-runs@main
+      with:
+        retain_days: 1
+        keep_minimum_runs: 3
 
-    -名称：删除旧版本
-      用途：dev-drprasad/delete-older-releases@v0.1.0
-      如果：env.UPLOAD_RELEASE =='true'&&！cancelled（）
-      与：
-        keep_latest：3
-        delete_tags：是
-      env：
-        GITHUB_TOKEN：$ {{ secrets.GITHUB_TOKEN }}
-        
+    - name: Remove old Releases
+      uses: dev-drprasad/delete-older-releases@v0.1.0
+      if: env.UPLOAD_RELEASE == 'true' && !cancelled()
+      with:
+        keep_latest: 3
+        delete_tags: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
